@@ -108,7 +108,7 @@
         audio.style.display = "none";
 
         var moreInfo =document.createElement("a");
-        moreInfo.href = `https://www.google.com/search?hl=${LANGUAGE}&q=define+${info.word}`;
+        moreInfo.href = `https://${LANGUAGE}.wiktionary.org/wiki/${encodeURIComponent(info.word.trim())}`;
         moreInfo.style = "float: right; text-decoration: none;"
         moreInfo.target = "_blank";
 
