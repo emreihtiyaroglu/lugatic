@@ -2,7 +2,7 @@
 // background.scripts list, so the polyfill must be imported here; Firefox runs
 // an event page where importScripts does not exist and the manifest list applies.
 if (typeof importScripts === "function") {
-    importScripts("/src/shared/browser-polyfill.js");
+    importScripts("/src/shared/browser-polyfill.js", "/src/shared/sense-ranking.js");
 }
 
 const DICTIONARY_API_URL = 'https://api.dictionaryapi.dev/api/v2/entries',
@@ -37,22 +37,33 @@ function lookup (word, lang) {
 }
 
 function extractContent (entries) {
-    const entry = entries[0],
-        firstMeaning = entry && entry.meanings && entry.meanings[0],
-        firstDefinition = firstMeaning && firstMeaning.definitions[0];
+    const entry = entries[0];
+    if (!entry) { return null; }
 
-    if (!firstDefinition || !firstDefinition.definition) { return null; }
+    const senses = senseRanking.rankMeanings(entry.meanings || [], entry.word)
+        .map((group) => ({
+            pos: group.pos,
+            senses: group.senses.map((sense) => ({
+                definition: capitalize(sense.definition),
+                example: sense.example
+            }))
+        }));
 
-    let meaning = firstDefinition.definition;
-    meaning = meaning[0].toUpperCase() + meaning.substring(1);
+    if (!senses.length) { return null; }
 
     const phonetics = (entry.phonetics || []).find((phonetic) => phonetic.audio);
 
     return {
         word: entry.word,
-        meaning: meaning,
+        // Single-string summary kept for history storage.
+        meaning: senses[0].senses[0].definition,
+        senses: senses,
         audioSrc: (phonetics && phonetics.audio) || null
     };
+}
+
+function capitalize (text) {
+    return text ? text[0].toUpperCase() + text.substring(1) : text;
 }
 
 function saveWord (content) {

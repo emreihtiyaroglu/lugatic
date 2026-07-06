@@ -59,7 +59,8 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 - `src/content/` — selection detection (double-click, floating button), bubble UI in Shadow DOM
 - `src/sidepanel/` — result view for PDFs (Chrome sidePanel / Firefox sidebar)
 - `src/options/` — settings page
-- `src/shared/` — `DefinitionResult` schema, normalization, lemma mapping, storage helpers
+- `src/shared/` — `DefinitionResult` schema, normalization, lemma mapping, sense quality
+  ranking, storage helpers
 - `data-pipeline/` — Dockerized build of the offline dataset (not shipped in the extension)
 
 **MV3 cross-browser notes**
@@ -80,6 +81,13 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
    audio, extra senses) into the local entry or create a new one, badge `web`
 4. **Cache**: write web results into IndexedDB `cache` store (LRU cap ~10k entries) → offline next time
 5. **Neither**: friendly "No definition found — Ask AI?" state with the AI button prominent
+
+**Sense ranking (quality filter).** dictionaryapi.dev and Wiktionary often list circular
+morphological glosses first ("container: one that contains"). Before rendering, a ranking
+module in `src/shared/` scores senses per part of speech: **demote** short senses that
+contain the headword's stem or match circular-gloss patterns ("one who …", "that which …",
+"plural of …"); **promote** senses that carry an example. The bubble renders the top 2–3
+ranked senses per POS.
 
 `DefinitionResult` (normalized internal format, language-aware from day one):
 
@@ -107,7 +115,8 @@ Trigger mode is a setting: double-click / floating button / both / require modif
 **Bubble spec**
 - Rendered in a Shadow DOM container appended to `<body>`; positioned near the selection,
   flipping above/below to stay in the viewport
-- Collapsed max height ≈ 280px: word, phonetic + 🔊, top 1–2 senses per part of speech
+- Collapsed max height ≈ 280px: word, phonetic + 🔊, top 2–3 quality-ranked senses per
+  part of speech (see §3 sense ranking)
 - **"More ▾"** expands to ≈ 520px with internal scroll for the full entry
 - Footer: source badge (`local` / `web`) · ✨ AI button · settings gear
 - Dismiss on outside click or Esc; keep original Dictionary Anywhere visual styling
@@ -130,7 +139,10 @@ Trigger mode is a setting: double-click / floating button / both / require modif
 
 **Pipeline** (`data-pipeline/`, runs in Docker for reproducibility)
 1. Download pinned source snapshots (URLs + checksums committed)
-2. Parse, filter, merge (WordNet first, Wiktionary fills gaps/adds senses), deduplicate
+2. Parse, filter, merge, deduplicate. Merge rule: WordNet first, Wiktionary fills gaps
+   and adds senses; when both sources cover a word, the WordNet gloss becomes sense #1
+   (WordNet glosses are hand-written and rarely circular), with Wiktionary senses
+   following in ranked order
 3. Emit `dataset-en-vX.json.gz` (~20–35 MB) + `lemmas-en-vX.json.gz`
 4. Upload as assets to a GitHub Release
 
@@ -194,6 +206,7 @@ lugatic/
 - [ ] Context menu + side panel → PDF support
 - [ ] AI button + AI site dropdown
 - [ ] History (port from original) with clear button
+- [ ] Recursive in-bubble lookup: double-click a word inside the bubble to look it up
 - [ ] Options page complete; icons + store screenshots
 - [ ] PRIVACY.md; manual test matrix pass (see §9)
 - [ ] Tag v1.0.0 → GitHub Release; submit to AMO (free) and Chrome Web Store ($5 one-time)
