@@ -11,12 +11,31 @@
   },
   "scripts": {
     "update-polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.js src/shared/browser-polyfill.js",
-    "lint": "web-ext lint --source-dir=. --ignore-files 'node_modules/**' 'package.json' 'package-lock.json' '*.md'"
+    "lint": "web-ext lint",
+    "lint:js": "eslint .",
+    "test": "node --test",
+    "build": "web-ext build --overwrite-dest"
+  },
+  "webExt": {
+    "sourceDir": ".",
+    "ignoreFiles": [
+      "node_modules/**",
+      "web-ext-artifacts/**",
+      "tests/**",
+      "package.json",
+      "package-lock.json",
+      "eslint.config.mjs",
+      "*.md",
+      ".github/**"
+    ]
   },
   "dependencies": {
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "globals": "^17.7.0",
     "web-ext": "^8.7.1"
   }
 }
