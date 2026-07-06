@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+web-ext-artifacts/
+*.zip
+
+# OS / environment junk
+.DS_Store
+*Zone.Identifier
