@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Parse step, slice 1 (PLAN.md §5): Open English WordNet JSON →
-// build/dataset-en.json in the DefinitionResult-compatible shape of §3:
-//   { word, lang, phonetic?, entries: [{ pos, senses: [{ definition, example? }] }] }
-// Prints entry/sense counts and gzipped size to sanity-check the 20–35 MB
-// budget (that budget is for the *merged* dataset; WordNet alone runs smaller).
+// Parse step (PLAN.md §5): Open English WordNet JSON →
+//   build/dataset-en.json — DefinitionResult-compatible shape of §3:
+//     { word, lang, phonetic?, entries: [{ pos, senses: [{ definition, example? }] }] }
+//   build/lemmas-en.json — irregular-form exception table for runtime
+//     lemmatization: { lang, forms: { "geese": [{ lemma, pos }] } }
+// Prints counts and gzipped sizes against the ~6 MB bundled-dataset target.
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import path from "node:path";
@@ -44,6 +45,10 @@ for (const file of files.filter((f) => /^(noun|verb|adj|adv)\./.test(f))) {
 // Entry files (entries-*.json) map lemma → POS block → ordered sense list.
 const records = [];
 const unknownPos = new Map();
+// Inverted irregular-form index ("geese" → goose): WordNet's exception
+// lists, shipped as lemmas-en.json for runtime lemmatization (PLAN.md §5).
+// Regular inflections are handled at runtime by Morphy suffix rules instead.
+const exceptions = new Map();
 let senseCount = 0;
 
 for (const file of files.filter((f) => /^entries-/.test(f)).sort()) {
@@ -53,6 +58,7 @@ for (const file of files.filter((f) => /^entries-/.test(f)).sort()) {
         // Homographs get suffixed codes ("agora" → "n-1", "n-2"); the base
         // code before the dash is the POS, and same-POS senses merge in order.
         const sensesByPos = new Map();
+        const formsOfLemma = [];
         let phonetic = null;
 
         for (const [code, block] of Object.entries(posBlocks)) {
@@ -78,6 +84,13 @@ for (const file of files.filter((f) => /^entries-/.test(f)).sort()) {
                 senseCount += senses.length;
                 const key = pos || baseCode;
                 sensesByPos.set(key, (sensesByPos.get(key) || []).concat(senses));
+
+                for (const form of block.form || []) {
+                    const inflected = form.toLowerCase();
+                    if (inflected !== lemma.toLowerCase()) {
+                        formsOfLemma.push({ form: inflected, pos: key });
+                    }
+                }
             }
         }
 
@@ -90,6 +103,15 @@ for (const file of files.filter((f) => /^entries-/.test(f)).sort()) {
                 ...(phonetic ? { phonetic } : {}),
                 entries
             });
+
+            // Only forms whose lemma made it into the dataset are useful.
+            for (const { form, pos } of formsOfLemma) {
+                const targets = exceptions.get(form) || [];
+                if (!targets.some((t) => t.lemma === lemma && t.pos === pos)) {
+                    targets.push({ lemma, pos });
+                }
+                exceptions.set(form, targets);
+            }
         }
     }
 }
@@ -102,14 +124,27 @@ writeFileSync(path.join(buildDir, "dataset-en.json"), json);
 const gzipped = gzipSync(json, { level: 9 });
 writeFileSync(path.join(buildDir, "dataset-en.json.gz"), gzipped);
 
+const lemmas = {
+    lang: "en",
+    forms: Object.fromEntries([...exceptions].sort(([a], [b]) => (a < b ? -1 : 1)))
+};
+const lemmasJson = JSON.stringify(lemmas);
+writeFileSync(path.join(buildDir, "lemmas-en.json"), lemmasJson);
+const lemmasGzipped = gzipSync(lemmasJson, { level: 9 });
+writeFileSync(path.join(buildDir, "lemmas-en.json.gz"), lemmasGzipped);
+
 const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1) + " MB";
+const kb = (bytes) => (bytes / 1024).toFixed(1) + " KB";
 console.log("dataset-en.json written");
 console.log(`  words:       ${records.length}`);
 console.log(`  entries:     ${records.reduce((n, r) => n + r.entries.length, 0)}`);
 console.log(`  senses:      ${senseCount}`);
 console.log(`  synsets:     ${synsets.size}`);
 console.log(`  raw size:    ${mb(json.length)}`);
-console.log(`  gzip -9:     ${mb(gzipped.length)}  (merged-dataset budget: 20-35 MB)`);
+console.log(`  gzip -9:     ${mb(gzipped.length)}  (bundled-dataset target: ~6 MB)`);
+console.log("lemmas-en.json written");
+console.log(`  irregular forms: ${exceptions.size}`);
+console.log(`  raw / gzip:  ${kb(lemmasJson.length)} / ${kb(lemmasGzipped.length)}`);
 if (unknownPos.size) {
     console.log(`  unmapped POS codes kept as-is: ${JSON.stringify(Object.fromEntries(unknownPos))}`);
 }

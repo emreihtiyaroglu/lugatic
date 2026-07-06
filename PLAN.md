@@ -14,8 +14,9 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 **Goals**
 - Instant word lookup with a clean in-page bubble (preserve the original's look & feel)
 - One merged result per word (no dual panels), with a small source badge (local / web)
-- High coverage: merged WordNet + Wiktionary offline dataset, dictionaryapi.dev fallback
-- Light and fast: small extension download, dataset fetched on first run, IndexedDB lookups
+- High coverage: WordNet offline base (~128k words), dictionaryapi.dev fallback with permanent
+  caching — Wiktionary coverage accumulates lazily through actual lookups
+- Light and fast: dataset bundled with the extension (~6 MB gzipped), IndexedDB lookups
 - Works on PDFs via context menu + side panel
 - AI context explanation via prefilled tab to the user's chosen AI site (no API keys)
 - Cross-browser: Chrome + Firefox, Manifest V3
@@ -44,7 +45,7 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 │  │ background service worker                          │             │
 │  │  lookup(word, context):                            │             │
 │  │   1. normalize (strip punct., lowercase, lemma)    │             │
-│  │   2. IndexedDB query (merged offline dataset)      │             │
+│  │   2. IndexedDB query (bundled offline dataset)     │             │
 │  │   3. if miss/thin → fetch dictionaryapi.dev        │             │
 │  │   4. merge → normalized DefinitionResult           │             │
 │  │   5. cache web results into IndexedDB              │             │
@@ -55,7 +56,7 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 ```
 
 **Key modules**
-- `src/background/` — service worker: lookup waterfall, dataset download, caching, context-menu registration
+- `src/background/` — service worker: lookup waterfall, bundled-dataset import, caching, context-menu registration
 - `src/content/` — selection detection (double-click, floating button), bubble UI in Shadow DOM
 - `src/sidepanel/` — result view for PDFs (Chrome sidePanel / Firefox sidebar)
 - `src/options/` — settings page
@@ -74,12 +75,17 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 ## 3. Lookup waterfall (single merged result)
 
 1. **Normalize**: trim, strip surrounding punctuation, lowercase; multi-word selection → try exact
-   phrase, else first word; map inflected form → lemma via bundled inflection table
+   phrase, else first word; map inflected form → lemma via Morphy-style suffix rules plus the
+   OEWN exception table (§5)
 2. **Local**: query IndexedDB `definitions` store → hit = render instantly, badge `local`
 3. **Fallback**: miss or thin entry (no definitions for any POS) → `GET
    https://api.dictionaryapi.dev/api/v2/entries/en/{word}` → merge missing fields (pronunciation,
-   audio, extra senses) into the local entry or create a new one, badge `web`
-4. **Cache**: write web results into IndexedDB `cache` store (LRU cap ~10k entries) → offline next time
+   audio, extra senses) into the local entry or create a new one, badge `web`. If
+   dictionaryapi.dev is unreachable → Wiktionary REST API
+   (`/api/rest_v1/page/definition/{word}`), HTML-stripped through the same adapter
+   interface (v1.0)
+4. **Cache**: write web results into IndexedDB `cache` store permanently (no LRU eviction —
+   growth is bounded by words actually looked up); manual clear in options
 5. **Neither**: friendly "No definition found — Ask AI?" state with the AI button prominent
 
 **Sense ranking (quality filter).** dictionaryapi.dev and Wiktionary often list circular
@@ -132,26 +138,25 @@ Trigger mode is a setting: double-click / floating button / both / require modif
 ## 5. Offline dataset and pipeline
 
 **Sources**
-- Open English WordNet (latest release) — base layer, permissive license
-- Wiktionary via Wiktextract JSON (kaikki.org) — filtered to a top-frequency wordlist
-  (~60–80k lemmas), essentials only: definitions, POS, IPA
-- Inflection → lemma table derived from the Wiktionary extract
+- Open English WordNet 2025 (JSON) is the sole build-time source: definitions, examples,
+  pronunciations, and morphology (irregular `form` lists → exception table; regular
+  inflections resolved at runtime by Morphy-style suffix rules checked against the dataset)
+- Wiktionary is **not** merged at build time — its coverage arrives lazily via the online
+  fallback and permanent cache. The kaikki.org snapshot stays checksum-pinned as an
+  optional pipeline download: fallback source for inflections if OEWN morphology proves
+  insufficient, and raw material for the v2 full pack
 
 **Pipeline** (`data-pipeline/`, runs in Docker for reproducibility)
-1. Download pinned source snapshots (URLs + checksums committed)
-2. Parse, filter, merge, deduplicate. Merge rule: WordNet first, Wiktionary fills gaps
-   and adds senses; when both sources cover a word, the WordNet gloss becomes sense #1
-   (WordNet glosses are hand-written and rarely circular), with Wiktionary senses
-   following in ranked order
-3. Emit `dataset-en-vX.json.gz` (~20–35 MB) + `lemmas-en-vX.json.gz`
-4. Upload as assets to a GitHub Release
+1. Download pinned source snapshots (URLs + checksums committed); Wiktionary optional
+2. Parse WordNet: definitions/examples/pronunciations per lemma, homographs merged per POS
+3. Emit `dataset-en.json.gz` (~5.7 MB, measured) + `lemmas-en.json.gz` (exception table)
 
 **Delivery**
-- Extension ships ~1 MB; on first run, downloads the dataset from GitHub Releases with a
-  progress indicator, decompresses, bulk-inserts into IndexedDB
-- Until ready (and as permanent fallback) lookups use the web API — works from second one
-- Dataset is versioned independently of the extension; background check for newer dataset
-  (manual "update dataset" button in options; no silent large downloads)
+- The dataset is **bundled inside the extension package** (~6 MB total download, within
+  store limits); imported into IndexedDB on install/update with progress UI
+- No first-run download, no GitHub Release delivery, no update checker — dataset versions
+  ride extension releases
+- Until import completes (and as permanent fallback) lookups use the web API
 
 **Multi-language readiness**
 - Every store, file, and schema is keyed by `lang`; dataset files are per-language
@@ -163,7 +168,7 @@ Trigger mode is a setting: double-click / floating button / both / require modif
 - Trigger mode (double-click / floating button / both) + optional modifier key
 - AI site dropdown (Claude / ChatGPT / Perplexity) + enable/disable AI button
 - History: on/off, view, clear
-- Dataset: status, version, re-download, clear cache
+- Dataset: status, version, re-import, clear web cache
 - Language selector (en only in v1, architecture-ready)
 - Storage: settings in `storage.sync` (small), dataset/cache/history in IndexedDB
 
@@ -195,10 +200,11 @@ lugatic/
 - [ ] Repo, README, LICENSE, ATTRIBUTION, CI lint
 
 **v0.5 — "Hybrid" (the core)**
-- [ ] Data pipeline in Docker → first `dataset-en-v1` GitHub Release
-- [ ] First-run dataset download + IndexedDB import with progress UI
-- [ ] Lookup waterfall + merging + caching + source badge
-- [ ] Lemmatization; phrase-then-first-word selection handling
+- [x] Data pipeline in Docker: pinned downloads + WordNet parse (slice 1)
+- [ ] Pipeline slice 2: lemma exception table from OEWN morphology
+- [ ] Bundle dataset in extension; IndexedDB import on install/update with progress UI
+- [ ] Lookup waterfall + permanent caching + source badge
+- [ ] Runtime lemmatization (Morphy rules + exception table); phrase-then-first-word handling
 - [ ] Bubble redesign: collapsed/expanded "More ▾", footer row
 - [ ] Floating selection button trigger + trigger settings
 
@@ -207,12 +213,14 @@ lugatic/
 - [ ] AI button + AI site dropdown
 - [ ] History (port from original) with clear button
 - [ ] Recursive in-bubble lookup: double-click a word inside the bubble to look it up
+- [ ] Wiktionary REST API fallback when dictionaryapi.dev is unreachable
 - [ ] Options page complete; icons + store screenshots
 - [ ] PRIVACY.md; manual test matrix pass (see §9)
 - [ ] Tag v1.0.0 → GitHub Release; submit to AMO (free) and Chrome Web Store ($5 one-time)
 
-**v2 ideas (parking lot)**: bundled PDF.js viewer for in-PDF bubbles; API-key AI integration;
-Spanish/German/French datasets; Anki export of history.
+**v2 ideas (parking lot)**: full offline pack — merged WordNet + Wiktionary dataset
+(~20–35 MB) as optional download for maximum offline coverage; bundled PDF.js viewer for
+in-PDF bubbles; API-key AI integration; Spanish/German/French datasets; Anki export of history.
 
 ## 9. Testing checklist (manual matrix)
 
@@ -220,7 +228,7 @@ Spanish/German/French datasets; Anki export of history.
 - Word forms: "running", "better", "don't", "state-of-the-art", "word," (trailing comma)
 - Multi-word selection; word with no definition (AI fallback state)
 - Offline mode (disable network): local hits still work; web-miss shows graceful error
-- First-run: dataset download progress, interrupt/resume, lookups work during download
+- First install/update: bundled dataset import progress; lookups work during import (web fallback)
 - PDF: selection → context menu → side panel result (Chrome and Firefox)
 - Dark/light pages: bubble unreadable nowhere (Shadow DOM isolation)
 - `web-ext lint` clean; extension reload survives service-worker sleep
@@ -231,6 +239,7 @@ Spanish/German/French datasets; Anki export of history.
 - Google Docs renders text on canvas: lookups unavailable there
 - Cross-origin iframes: bubble may not appear inside them
 - dictionaryapi.dev is community-run: outages degrade to offline-only gracefully
+  (mitigated by the Wiktionary REST fallback from v1.0)
 
 ## 11. Development environment (Ubuntu)
 
