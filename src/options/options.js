@@ -59,15 +59,15 @@ function saveOptions(e) {
   }
   
   function downloadHistory (e) {
-    let fileContent = "" 
+    let fileContent = "",
         storageItem = browser.storage.local.get("definitions"),
         anchorTag = document.querySelector("#download-history-link");
 
     storageItem.then((results) => {
         let definitions = results.definitions || {};
 
-        for (definition in definitions) {
-            if (!definitions.hasOwnProperty(definition)) { return; }
+        for (let definition in definitions) {
+            if (!Object.prototype.hasOwnProperty.call(definitions, definition)) { return; }
 
             fileContent += definition;
             fileContent += "\t";
