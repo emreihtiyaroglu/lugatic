@@ -1,0 +1,44 @@
+{
+  "author": "Suraj Jain",
+
+  "manifest_version": 2,
+  "name": "Dictionary Anywhere",
+  "version": "1.2.0",
+
+  "description": "View definitions easily as you browse the web. Double-click any word to view its definition in a small pop-up bubble.",
+
+  "icons": {
+    "48": "assets/icons/Dictionary-48.png",
+    "64": "assets/icons/Dictionary-64.png",
+    "96": "assets/icons/Dictionary-96.png",
+    "128": "assets/icons/Dictionary-128.png"
+  },
+
+  "options_ui": {
+    "page": "src/options/options.html",
+    "browser_style": true,
+    "chrome_style": true
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/shared/browser-polyfill.js",
+        "src/content/dictionary.js"
+      ]
+    }
+  ],
+
+  "background": {
+    "scripts": [
+      "src/shared/browser-polyfill.js",
+      "src/background/background.js"
+    ],
+    "persistent": false
+  },
+
+  "permissions": [
+    "storage"
+  ]
+}
