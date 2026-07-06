@@ -40,6 +40,16 @@ export default [
         }
     },
     {
+        files: ["data-pipeline/**/*.mjs"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "module",
+            globals: {
+                ...globals.node
+            }
+        }
+    },
+    {
         files: ["tests/**/*.js"],
         languageOptions: {
             ecmaVersion: 2022,

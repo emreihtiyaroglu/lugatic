@@ -26,11 +26,24 @@ fetch () {
     fi
 }
 
+WITH_WIKTIONARY="${WITH_WIKTIONARY:-0}"
+for arg in "$@"; do
+    [ "$arg" = "--with-wiktionary" ] && WITH_WIKTIONARY=1
+done
+
 fetch "$WORDNET_URL"
-fetch "$KAIKKI_URL"
+if [ "$WITH_WIKTIONARY" = "1" ]; then
+    fetch "$KAIKKI_URL"
+else
+    echo "skipping Wiktionary snapshot (optional since PLAN.md §5 rewrite;"
+    echo "  pass --with-wiktionary or set WITH_WIKTIONARY=1 to fetch it)"
+fi
 
 echo "verifying checksums..."
-(cd sources && sha256sum -c ../checksums.sha256)
+# --ignore-missing: the Wiktionary snapshot is optional, but anything
+# present must match its pin. The WordNet zip is mandatory.
+(cd sources && sha256sum -c --ignore-missing ../checksums.sha256)
+[ -f "sources/$(basename "$WORDNET_URL")" ]
 
 if [ ! -d sources/wordnet ]; then
     echo "extracting WordNet..."
