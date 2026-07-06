@@ -1,11 +1,12 @@
 {
-  "author": "Suraj Jain",
+  "author": "Emre Ihtiyaroglu",
+  "homepage_url": "https://github.com/emreihtiyaroglu/lugatic",
 
   "manifest_version": 2,
-  "name": "Dictionary Anywhere",
+  "name": "Lugatic",
   "version": "1.2.0",
 
-  "description": "View definitions easily as you browse the web. Double-click any word to view its definition in a small pop-up bubble.",
+  "description": "Lugatic — instant dictionary lookup, offline and online",
 
   "icons": {
     "48": "assets/icons/Dictionary-48.png",
