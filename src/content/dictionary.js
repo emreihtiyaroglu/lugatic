@@ -154,7 +154,7 @@
 
         var heightBefore = popupDiv.clientHeight;
         createdDiv.heading.textContent = content.word;
-        createdDiv.meaning.textContent = content.meaning;
+        renderSenses(createdDiv.meaning, content);
         createdDiv.moreInfo.textContent = "More »";
 
         var heightAfter = popupDiv.clientHeight;
@@ -173,6 +173,29 @@
             sound.play();
           });
         }
+    }
+
+    function renderSenses (container, content){
+        container.textContent = "";
+
+        if (!content.senses || !content.senses.length) {
+            container.textContent = content.meaning;
+            return;
+        }
+
+        content.senses.forEach(function(group){
+            var posLabel = document.createElement("div");
+            posLabel.style = "font-style: italic; color: #666; margin-top: 6px;";
+            posLabel.textContent = group.pos;
+            container.appendChild(posLabel);
+
+            group.senses.forEach(function(sense, index){
+                var line = document.createElement("div");
+                line.style = "margin: 2px 0 0 8px;";
+                line.textContent = (group.senses.length > 1 ? (index + 1) + ". " : "") + sense.definition;
+                container.appendChild(line);
+            });
+        });
     }
 
     function noMeaningFound (createdDiv){
