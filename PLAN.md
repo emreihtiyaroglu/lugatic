@@ -64,7 +64,8 @@ rebuilt with a real dictionary API and an offline database instead of Google-res
 
 **MV3 cross-browser notes**
 - Use `webextension-polyfill` so one codebase serves `chrome.*` and `browser.*`
-- Manifest declares `minimum_chrome_version: "114"` (sidePanel API) and
+- Manifest declares `minimum_chrome_version: "121"` (Chrome ≤120 rejects the cross-browser
+  `background.scripts` key that Firefox needs; 121 also covers the sidePanel API's 114 floor) and
   `browser_specific_settings.gecko` with `strict_min_version: "115.0"` and an add-on ID
 - Service workers sleep after ~30s idle: all state lives in IndexedDB/storage, never in globals;
   IndexedDB connections opened per-event
