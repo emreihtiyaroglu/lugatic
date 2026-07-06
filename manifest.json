@@ -33,6 +33,7 @@
     "service_worker": "src/background/background.js",
     "scripts": [
       "src/shared/browser-polyfill.js",
+      "src/shared/normalization.js",
       "src/shared/sense-ranking.js",
       "src/background/background.js"
     ]

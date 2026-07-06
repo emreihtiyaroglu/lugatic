@@ -2,7 +2,11 @@
 // background.scripts list, so the polyfill must be imported here; Firefox runs
 // an event page where importScripts does not exist and the manifest list applies.
 if (typeof importScripts === "function") {
-    importScripts("/src/shared/browser-polyfill.js", "/src/shared/sense-ranking.js");
+    importScripts(
+        "/src/shared/browser-polyfill.js",
+        "/src/shared/normalization.js",
+        "/src/shared/sense-ranking.js"
+    );
 }
 
 const DICTIONARY_API_URL = 'https://api.dictionaryapi.dev/api/v2/entries',
@@ -26,11 +30,11 @@ browser.runtime.onMessage.addListener((request) => {
 });
 
 function lookup (word, lang) {
-    // TODO(v0.1): only trims for now — punctuation stripping and lowercasing
-    // land with the word-normalization task (PLAN.md §3 step 1).
-    const query = encodeURIComponent(word.trim());
+    const query = normalization.normalizeWord(word);
 
-    return fetch(`${DICTIONARY_API_URL}/${lang}/${query}`)
+    if (!query) { return Promise.resolve(null); }
+
+    return fetch(`${DICTIONARY_API_URL}/${lang}/${encodeURIComponent(query)}`)
         .then((response) => response.ok ? response.json() : null)
         .then((entries) => entries && extractContent(entries))
         .catch(() => null);
