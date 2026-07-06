@@ -1,10 +1,10 @@
 {
+  "manifest_version": 3,
+  "name": "Lugatic",
+  "version": "0.1.0",
+
   "author": "Emre Ihtiyaroglu",
   "homepage_url": "https://github.com/emreihtiyaroglu/lugatic",
-
-  "manifest_version": 2,
-  "name": "Lugatic",
-  "version": "1.2.0",
 
   "description": "Lugatic — instant dictionary lookup, offline and online",
 
@@ -16,9 +16,7 @@
   },
 
   "options_ui": {
-    "page": "src/options/options.html",
-    "browser_style": true,
-    "chrome_style": true
+    "page": "src/options/options.html"
   },
 
   "content_scripts": [
@@ -32,14 +30,25 @@
   ],
 
   "background": {
+    "service_worker": "src/background/background.js",
     "scripts": [
       "src/shared/browser-polyfill.js",
       "src/background/background.js"
-    ],
-    "persistent": false
+    ]
   },
 
   "permissions": [
     "storage"
-  ]
+  ],
+
+  "minimum_chrome_version": "121",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "lugatic@emreihtiyaroglu.github.io",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
 }
