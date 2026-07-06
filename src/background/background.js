@@ -5,29 +5,55 @@ if (typeof importScripts === "function") {
     importScripts("/src/shared/browser-polyfill.js");
 }
 
-const DEFAULT_HISTORY_SETTING = {
+const DICTIONARY_API_URL = 'https://api.dictionaryapi.dev/api/v2/entries',
+
+    DEFAULT_HISTORY_SETTING = {
         enabled: true
     };
 
 browser.runtime.onMessage.addListener((request) => {
     const { word, lang } = request;
 
-    // TODO(v0.1): the Google-scraping lookup was removed here. Replace with a
-    // dictionaryapi.dev fetch per PLAN.md §3, responding with
-    // { word, meaning, audioSrc }.
-    // TODO(v0.1): pronunciation audio must return in the dictionaryapi.dev
-    // task — the API provides audio URLs, so `audioSrc` is re-sourced there,
-    // not removed. The bubble's 🔊 button (PLAN.md §4) depends on it.
-    const content = null;
+    return lookup(word, lang).then((content) => {
+        content && browser.storage.local.get().then((results) => {
+            let history = results.history || DEFAULT_HISTORY_SETTING;
 
-    content && browser.storage.local.get().then((results) => {
-        let history = results.history || DEFAULT_HISTORY_SETTING;
+            history.enabled && saveWord(content)
+        });
 
-        history.enabled && saveWord(content)
+        return { content };
     });
-
-    return Promise.resolve({ content });
 });
+
+function lookup (word, lang) {
+    // TODO(v0.1): only trims for now — punctuation stripping and lowercasing
+    // land with the word-normalization task (PLAN.md §3 step 1).
+    const query = encodeURIComponent(word.trim());
+
+    return fetch(`${DICTIONARY_API_URL}/${lang}/${query}`)
+        .then((response) => response.ok ? response.json() : null)
+        .then((entries) => entries && extractContent(entries))
+        .catch(() => null);
+}
+
+function extractContent (entries) {
+    const entry = entries[0],
+        firstMeaning = entry && entry.meanings && entry.meanings[0],
+        firstDefinition = firstMeaning && firstMeaning.definitions[0];
+
+    if (!firstDefinition || !firstDefinition.definition) { return null; }
+
+    let meaning = firstDefinition.definition;
+    meaning = meaning[0].toUpperCase() + meaning.substring(1);
+
+    const phonetics = (entry.phonetics || []).find((phonetic) => phonetic.audio);
+
+    return {
+        word: entry.word,
+        meaning: meaning,
+        audioSrc: (phonetics && phonetics.audio) || null
+    };
+}
 
 function saveWord (content) {
     let word = content.word,

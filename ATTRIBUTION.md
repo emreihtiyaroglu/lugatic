@@ -25,6 +25,11 @@ library used, per project policy (see CLAUDE.md).
 
 ## Data sources
 
-None yet. Planned for later milestones (will be added here when actually used):
-Open English WordNet, Wiktionary via Wiktextract (kaikki.org, CC BY-SA), and
-[dictionaryapi.dev](https://dictionaryapi.dev/).
+- **[dictionaryapi.dev](https://dictionaryapi.dev/)** (Free Dictionary API)
+  by meetDeveloper — community-run, GPL-3.0.
+  Online definition lookups and pronunciation audio. Only the looked-up word
+  is sent; see the privacy statement. Audio files it serves may carry their
+  own licenses (e.g. CC BY-SA from Wikimedia Commons).
+
+Planned for later milestones (will be added here when actually used):
+Open English WordNet and Wiktionary via Wiktextract (kaikki.org, CC BY-SA).
