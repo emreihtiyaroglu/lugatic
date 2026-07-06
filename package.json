@@ -1,0 +1,22 @@
+{
+  "name": "lugatic",
+  "version": "0.1.0",
+  "description": "Lugatic — instant dictionary lookup, offline and online (browser extension)",
+  "private": true,
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/emreihtiyaroglu/lugatic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emreihtiyaroglu/lugatic.git"
+  },
+  "scripts": {
+    "update-polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.js src/shared/browser-polyfill.js",
+    "lint": "web-ext lint --source-dir=. --ignore-files 'node_modules/**' 'package.json' 'package-lock.json' '*.md'"
+  },
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
+  },
+  "devDependencies": {
+    "web-ext": "^8.7.1"
+  }
+}
