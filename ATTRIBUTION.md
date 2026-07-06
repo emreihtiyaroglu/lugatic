@@ -31,5 +31,12 @@ library used, per project policy (see CLAUDE.md).
   is sent; see the privacy statement. Audio files it serves may carry their
   own licenses (e.g. CC BY-SA from Wikimedia Commons).
 
+- **[Open English WordNet](https://github.com/globalwordnet/english-wordnet)**
+  (2025 edition) — CC BY 4.0.
+  Base layer of the offline dataset built by `data-pipeline/`: definitions,
+  examples, and pronunciations.
+
 Planned for later milestones (will be added here when actually used):
-Open English WordNet and Wiktionary via Wiktextract (kaikki.org, CC BY-SA).
+Wiktionary via Wiktextract (kaikki.org, CC BY-SA / GFDL) — its snapshot is
+already fetched and checksum-pinned by the pipeline, but not yet parsed
+into the dataset.

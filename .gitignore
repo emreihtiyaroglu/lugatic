@@ -6,6 +6,10 @@ dist/
 web-ext-artifacts/
 *.zip
 
+# Data pipeline artifacts (sources are pinned by checksum, not committed)
+data-pipeline/sources/
+data-pipeline/build/
+
 # OS / environment junk
 .DS_Store
 *Zone.Identifier
