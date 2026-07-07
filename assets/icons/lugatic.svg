@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#3949AB"/>
+  <!-- bookshelf: two upright spines + one leaning, on a shelf; the tall
+       left spine and the shelf together read as an L -->
+  <rect x="24" y="24" width="18" height="62" fill="#FFFFFF"/>
+  <rect x="48" y="34" width="18" height="52" fill="#FFFFFF"/>
+  <path d="M74 40 L90 34 L104 82 L88 88 Z" fill="#FFFFFF"/>
+  <rect x="24" y="90" width="80" height="16" fill="#FFFFFF"/>
+</svg>

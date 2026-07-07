@@ -9,10 +9,10 @@
   "description": "Lugatic — instant dictionary lookup, offline and online",
 
   "icons": {
-    "48": "assets/icons/Dictionary-48.png",
-    "64": "assets/icons/Dictionary-64.png",
-    "96": "assets/icons/Dictionary-96.png",
-    "128": "assets/icons/Dictionary-128.png"
+    "16": "assets/icons/lugatic-16.png",
+    "32": "assets/icons/lugatic-32.png",
+    "48": "assets/icons/lugatic-48.png",
+    "128": "assets/icons/lugatic-128.png"
   },
 
   "options_ui": {
