@@ -112,9 +112,14 @@
         moreInfo.style = "float: right; text-decoration: none;"
         moreInfo.target = "_blank";
 
+        // Source badge (PLAN.md §4): offline dataset vs web API result.
+        var sourceBadge = document.createElement("span");
+        sourceBadge.style = "display: none; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #72777d; border: 1px solid #c8ccd1; border-radius: 8px; padding: 1px 7px; vertical-align: middle;";
+
         content.appendChild(heading);
         content.appendChild(audio);
         content.appendChild(meaning);
+        content.appendChild(sourceBadge);
         content.appendChild(moreInfo);
         document.body.appendChild(hostDiv);
 
@@ -133,11 +138,12 @@
             }
         }
 
-        return { 
-            heading, 
-            meaning, 
-            moreInfo, 
-            audio 
+        return {
+            heading,
+            meaning,
+            moreInfo,
+            audio,
+            sourceBadge
         };
 
     }
@@ -156,6 +162,11 @@
         createdDiv.heading.textContent = content.word;
         renderSenses(createdDiv.meaning, content);
         createdDiv.moreInfo.textContent = "More »";
+
+        if (content.source) {
+            createdDiv.sourceBadge.textContent = content.source === "local" ? "offline" : "web";
+            createdDiv.sourceBadge.style.display = "inline-block";
+        }
 
         var heightAfter = popupDiv.clientHeight;
         var difference = heightAfter - heightBefore;
