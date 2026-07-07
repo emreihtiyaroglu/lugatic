@@ -1,24 +1,95 @@
     var DEFAULT_LANGUAGE = 'en',
         DEFAULT_TRIGGER_KEY = 'none',
+        DEFAULT_TRIGGER_MODE = 'dblclick',
 
         LANGUAGE,
-        TRIGGER_KEY;
+        TRIGGER_KEY,
+        TRIGGER_MODE;
 
     function showMeaning (event){
-        var createdDiv,
-            info = getSelectionInfo(event);
+        var info = getSelectionInfo(event);
 
         if (!info) { return; }
 
+        showMeaningForInfo(info);
+    }
+
+    function showMeaningForInfo (info){
+        removeTriggerButton();
+
+        var createdDiv = createDiv(info);
+
         retrieveMeaning(info)
-            .then((response) => {                
+            .then((response) => {
                 if (!response.content) { return noMeaningFound(createdDiv); }
 
                 appendToDiv(createdDiv, response.content);
             });
+    }
 
-        // Creating this div while we are fetching meaning to make extension more fast.
-        createdDiv = createDiv(info);
+    // Floating selection button (PLAN.md §4): shown near the selection when
+    // the trigger mode asks for it; clicking it opens the bubble. The icon
+    // is the Lugatic bookshelf built with DOM calls — no fetch, no innerHTML.
+    var SVG_NS = "http://www.w3.org/2000/svg";
+
+    function buildTriggerIcon (){
+        var svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("viewBox", "0 0 128 128");
+        svg.setAttribute("width", "20");
+        svg.setAttribute("height", "20");
+
+        [
+            ["rect", { width: "128", height: "128", rx: "24", fill: "#3949AB" }],
+            ["rect", { x: "24", y: "24", width: "18", height: "62", fill: "#FFFFFF" }],
+            ["rect", { x: "48", y: "34", width: "18", height: "52", fill: "#FFFFFF" }],
+            ["path", { d: "M74 40 L90 34 L104 82 L88 88 Z", fill: "#FFFFFF" }],
+            ["rect", { x: "24", y: "90", width: "80", height: "16", fill: "#FFFFFF" }]
+        ].forEach(function(shape){
+            var element = document.createElementNS(SVG_NS, shape[0]);
+            Object.keys(shape[1]).forEach(function(attr){
+                element.setAttribute(attr, shape[1][attr]);
+            });
+            svg.appendChild(element);
+        });
+
+        return svg;
+    }
+
+    function showTriggerButton (event){
+        removeTriggerButton();
+
+        if (TRIGGER_MODE !== 'button' && TRIGGER_MODE !== 'both') { return; }
+        if (document.querySelector('.dictionaryDiv')) { return; }
+
+        var info = getSelectionInfo(event);
+        if (!info) { return; }
+
+        var host = document.createElement('div');
+        host.className = 'lugaticTriggerButton';
+        host.style.position = 'absolute';
+        host.style.left = info.left + 'px';
+        host.style.top = info.bottom + 8 + 'px';
+        host.style.zIndex = '1000000';
+        host.attachShadow({ mode: 'open' });
+
+        var button = document.createElement('div');
+        button.style = 'width: 24px; height: 24px; border-radius: 6px; cursor: pointer; background: #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;';
+        button.title = 'Look up with Lugatic';
+        button.appendChild(buildTriggerIcon());
+        button.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showMeaningForInfo(info);
+        });
+
+        host.shadowRoot.appendChild(button);
+        document.body.appendChild(host);
+    }
+
+    function removeTriggerButton (){
+        document.querySelectorAll('.lugaticTriggerButton').forEach(function(node){
+            node.remove();
+        });
     }
 
 
@@ -293,6 +364,8 @@
     }
 
     document.addEventListener('dblclick', ((e) => {
+        if (TRIGGER_MODE === 'button') { return; }
+
         if (TRIGGER_KEY === 'none') {
             return showMeaning(e);
         }
@@ -305,21 +378,47 @@
         return;
     }));
 
+    document.addEventListener('mouseup', ((e) => {
+        // The selection is not final until after mouseup has dispatched.
+        window.setTimeout(function () { showTriggerButton(e); }, 0);
+    }));
+
+    document.addEventListener('mousedown', ((e) => {
+        if (!e.target.classList || !e.target.classList.contains('lugaticTriggerButton')) {
+            removeTriggerButton();
+        }
+    }));
+
     document.addEventListener('click', removeMeaning);
 
     document.addEventListener('keydown', ((e) => {
         if (e.key === 'Escape') {
             removeMeaning({ target: document.body });
+            removeTriggerButton();
         }
     }));
+
+    function applyInteractionSettings (interaction) {
+        interaction = interaction || {};
+        TRIGGER_KEY = (interaction.dblClick && interaction.dblClick.key) || DEFAULT_TRIGGER_KEY;
+        TRIGGER_MODE = interaction.mode || DEFAULT_TRIGGER_MODE;
+    }
 
     (function () {
         let storageItem = browser.storage.local.get();
 
         storageItem.then((results) => {
-            let interaction = results.interaction || { dblClick: { key: DEFAULT_TRIGGER_KEY }};
-
             LANGUAGE = results.language || DEFAULT_LANGUAGE;
-            TRIGGER_KEY = interaction.dblClick.key;
+            applyInteractionSettings(results.interaction);
         });
     })();
+
+    // Settings saved in the options page take effect without a page reload.
+    browser.storage.onChanged.addListener((changes) => {
+        if (changes.interaction) {
+            applyInteractionSettings(changes.interaction.newValue);
+        }
+        if (changes.language) {
+            LANGUAGE = changes.language.newValue || DEFAULT_LANGUAGE;
+        }
+    });

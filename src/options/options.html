@@ -29,12 +29,15 @@
           <div class="option-name">Pop-up definitions:</div>
           <div class="option-value">
             <div class="option-value-primary">
-              <label for="popup-dblclick-checkbox">
-                Display pop-up when I double-click a word
-              </label>
+              <label for="trigger-mode">Show definitions on:</label>
+              <select name="trigger-mode" id="trigger-mode">
+                <option value="dblclick">Double-click</option>
+                <option value="button">Floating button</option>
+                <option value="both">Both</option>
+              </select>
             </div>
             <div class="option-value-secondary">
-              <span id="popup-dblclick-text">Trigger key:</span>
+              <span id="popup-dblclick-text">Double-click trigger key:</span>
               <select name="popup-dblclick-key" id="popup-dblclick-key">
                 <option value="none">None</option>
                 <option value="ctrl" id="popup-dblclick-key-ctrl">Ctrl</option>
