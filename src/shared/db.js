@@ -73,12 +73,19 @@
         });
     }
 
+    function clearStore (storeName) {
+        return withStore(storeName, "readwrite", function (store) {
+            store.clear();
+        });
+    }
+
     var lugaticDb = {
         openDatabase: openDatabase,
         getMeta: getMeta,
         putMeta: putMeta,
         getDefinition: getDefinition,
-        bulkPut: bulkPut
+        bulkPut: bulkPut,
+        clearStore: clearStore
     };
 
     if (typeof module !== "undefined" && module.exports) {
