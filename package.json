@@ -11,6 +11,7 @@
   },
   "scripts": {
     "update-polyfill": "cp node_modules/webextension-polyfill/dist/browser-polyfill.js src/shared/browser-polyfill.js",
+    "bundle-dataset": "node data-pipeline/bundle-dataset.mjs",
     "lint": "web-ext lint",
     "lint:js": "eslint .",
     "test": "node --test",

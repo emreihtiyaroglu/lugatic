@@ -117,6 +117,55 @@ function saveOptions(e) {
     }, 1500);
   }
 
+  // --- Offline dictionary status (PLAN.md §6) ---
+
+  const DATASET_STATUS = document.querySelector("#dataset-status"),
+      REIMPORT_DATASET_BUTTON = document.querySelector("#reimport-dataset-btn");
+
+  let datasetManifest = null,
+      datasetRefreshTimer = null;
+
+  function scheduleDatasetRefresh (delay) {
+    window.clearTimeout(datasetRefreshTimer);
+    datasetRefreshTimer = window.setTimeout(refreshDatasetStatus, delay);
+  }
+
+  function refreshDatasetStatus () {
+    const manifestReady = datasetManifest
+        ? Promise.resolve(datasetManifest)
+        : fetch(browser.runtime.getURL("/assets/data/dataset-manifest.json"))
+            .then((response) => response.json())
+            .then((manifest) => (datasetManifest = manifest));
+
+    manifestReady
+        .then((manifest) => lugaticDb.getMeta(manifest.lang).then((meta) => {
+            if (meta && meta.importedVersion === manifest.version) {
+                DATASET_STATUS.textContent =
+                    "Ready — v" + manifest.version + " · " + meta.words + " words";
+                return;
+            }
+
+            DATASET_STATUS.textContent = meta && meta.progress
+                ? "Importing… " + meta.progress.done + " / " + meta.progress.total
+                : "Waiting for first import…";
+            scheduleDatasetRefresh(500);
+        }))
+        .catch(() => {
+            DATASET_STATUS.textContent = "Status unavailable";
+        });
+  }
+
+  function reimportDataset (e) {
+    browser.runtime.sendMessage({ type: "reimport-dataset" });
+    DATASET_STATUS.textContent = "Importing…";
+    scheduleDatasetRefresh(500);
+
+    e.preventDefault();
+  }
+
+  REIMPORT_DATASET_BUTTON.addEventListener("click", reimportDataset);
+  document.addEventListener("DOMContentLoaded", refreshDatasetStatus);
+
   document.addEventListener('DOMContentLoaded', restoreOptions);
 
   CLEAR_HISTORY_BUTTON.addEventListener("click", clearHistory);
