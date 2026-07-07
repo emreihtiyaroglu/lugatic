@@ -121,8 +121,10 @@ function saveOptions(e) {
 
   const DATASET_STATUS = document.querySelector("#dataset-status"),
       DATASET_STORAGE = document.querySelector("#dataset-storage"),
+      CACHE_COUNT = document.querySelector("#cache-count"),
       REIMPORT_DATASET_BUTTON = document.querySelector("#reimport-dataset-btn"),
-      REMOVE_DATASET_BUTTON = document.querySelector("#remove-dataset-btn");
+      REMOVE_DATASET_BUTTON = document.querySelector("#remove-dataset-btn"),
+      CLEAR_CACHE_BUTTON = document.querySelector("#clear-cache-btn");
 
   let datasetManifest = null,
       datasetRefreshTimer = null;
@@ -140,6 +142,7 @@ function saveOptions(e) {
             .then((manifest) => (datasetManifest = manifest));
 
     refreshStorageEstimate();
+    refreshCacheCount();
 
     manifestReady
         .then((manifest) => lugaticDb.getMeta(manifest.lang).then((meta) => {
@@ -161,6 +164,12 @@ function saveOptions(e) {
         .catch(() => {
             DATASET_STATUS.textContent = "Status unavailable";
         });
+  }
+
+  function refreshCacheCount () {
+    lugaticDb.countStore("cache")
+        .then((count) => { CACHE_COUNT.textContent = count; })
+        .catch(() => { CACHE_COUNT.textContent = "unavailable"; });
   }
 
   function refreshStorageEstimate () {
@@ -191,8 +200,16 @@ function saveOptions(e) {
     e.preventDefault();
   }
 
+  function clearWebCache (e) {
+    browser.runtime.sendMessage({ type: "clear-web-cache" })
+        .then(() => refreshCacheCount());
+
+    e.preventDefault();
+  }
+
   REIMPORT_DATASET_BUTTON.addEventListener("click", reimportDataset);
   REMOVE_DATASET_BUTTON.addEventListener("click", removeOfflineData);
+  CLEAR_CACHE_BUTTON.addEventListener("click", clearWebCache);
   document.addEventListener("DOMContentLoaded", refreshDatasetStatus);
 
   document.addEventListener('DOMContentLoaded', restoreOptions);

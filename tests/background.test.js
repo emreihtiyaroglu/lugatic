@@ -7,7 +7,8 @@ let listener;
 const fetched = [];
 const state = {
     datasetReady: false,
-    definitions: {} // word → stored record
+    definitions: {}, // word → stored record
+    cache: {} // word → cache entry
 };
 
 global.browser = {
@@ -25,7 +26,9 @@ global.lemmatize = require("../src/shared/lemmatize.js");
 global.datasetReady = () => Promise.resolve(state.datasetReady);
 global.lugaticDb = {
     getDefinition: (lang, word) => Promise.resolve(state.definitions[word]),
-    getLemma: () => Promise.resolve(undefined)
+    getLemma: () => Promise.resolve(undefined),
+    getCached: (lang, word) => Promise.resolve(state.cache[word]),
+    putCached: (entry) => { state.cache[entry.word] = entry; return Promise.resolve(); }
 };
 global.fetch = (url) => {
     fetched.push(url);
@@ -112,6 +115,59 @@ test("local miss falls through to the web", async () => {
 
     assert.strictEqual(content.source, "web");
     assert.strictEqual(fetched.at(-1), "https://api.dictionaryapi.dev/api/v2/entries/en/container");
+});
+
+test("web results are cached permanently under the normalized query", async () => {
+    state.datasetReady = false;
+    state.definitions = {};
+    state.cache = {};
+
+    const { content } = await listener({ word: "“Container,”", lang: "en" });
+
+    assert.strictEqual(content.source, "web");
+    assert.ok(state.cache.container, "cache entry keyed by normalized query");
+    assert.strictEqual(state.cache.container.lang, "en");
+    assert.strictEqual(state.cache.container.content.word, "container");
+});
+
+test("cached results are served without fetching", async () => {
+    state.datasetReady = false;
+    state.definitions = {};
+    state.cache = {
+        container: { lang: "en", word: "container", content: { word: "container", meaning: "Cached.", senses: [], audioSrc: null, source: "web" } }
+    };
+    const callsBefore = fetched.length;
+
+    const { content } = await listener({ word: "Container", lang: "en" });
+
+    assert.strictEqual(content.meaning, "Cached.");
+    assert.strictEqual(fetched.length, callsBefore);
+});
+
+test("misses are not cached", async () => {
+    state.datasetReady = false;
+    state.definitions = {};
+    state.cache = {};
+    const okFetch = global.fetch;
+    global.fetch = (url) => { fetched.push(url); return Promise.resolve({ ok: false }); };
+
+    const { content } = await listener({ word: "xqzwv", lang: "en" });
+    global.fetch = okFetch;
+
+    assert.strictEqual(content, null);
+    assert.deepStrictEqual(state.cache, {});
+});
+
+test("local hits win over the cache", async () => {
+    state.datasetReady = true;
+    state.definitions = { researcher: RESEARCHER_RECORD };
+    state.cache = {
+        researcher: { lang: "en", word: "researcher", content: { word: "researcher", meaning: "Stale cached.", senses: [], audioSrc: null, source: "web" } }
+    };
+
+    const { content } = await listener({ word: "researcher", lang: "en" });
+
+    assert.strictEqual(content.source, "local");
 });
 
 test("typed messages are ignored by the lookup listener", async () => {
