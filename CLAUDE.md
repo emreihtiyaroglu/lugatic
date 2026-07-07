@@ -24,3 +24,4 @@ This project is **Lugatic**, an MV3 cross-browser (Chrome + Firefox) dictionary 
 - No analytics, no telemetry, no external requests except dictionaryapi.dev and the
   dataset download from GitHub Releases.
 - License is GPL-3.0; keep ATTRIBUTION.md updated when adding any data source or library.
+- Full local verification before any push: eslint + tests + web-ext lint + build — never a subset.
