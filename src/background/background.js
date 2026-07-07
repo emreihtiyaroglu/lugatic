@@ -41,10 +41,34 @@ function lookup (word, lang) {
     if (!query) { return Promise.resolve(null); }
 
     // Waterfall (PLAN.md §3): local dataset (direct, then lemmatized) →
-    // dictionaryapi.dev. Local is skipped entirely until import completes.
+    // permanent web-result cache → dictionaryapi.dev. Local is skipped
+    // until import completes; the cache works regardless.
     return localLookup(query, lang)
         .catch(() => null)
-        .then((content) => content || webLookup(query, lang));
+        .then((content) => content || cachedLookup(query, lang))
+        .then((content) => content
+            || webLookup(query, lang).then((webContent) => cacheResult(query, lang, webContent)));
+}
+
+function cachedLookup (word, lang) {
+    return lugaticDb.getCached(lang, word)
+        .then((entry) => (entry ? entry.content : null))
+        .catch(() => null);
+}
+
+// Permanent by design (§3): no eviction — growth is bounded by words the
+// user actually looks up. Manual clear lives in the options page. Misses
+// are not cached so an API outage never sticks.
+function cacheResult (word, lang, content) {
+    if (content) {
+        lugaticDb.putCached({
+            lang: lang,
+            word: word,
+            content: content,
+            cachedAt: Date.now()
+        }).catch(() => {});
+    }
+    return content;
 }
 
 async function localLookup (word, lang) {

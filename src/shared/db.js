@@ -7,7 +7,7 @@
 (function (global) {
 
     var DB_NAME = "lugatic",
-        DB_VERSION = 1;
+        DB_VERSION = 2; // v2: cache store (permanent web-result cache, §3)
 
     function openDatabase () {
         return new Promise(function (resolve, reject) {
@@ -24,6 +24,9 @@
                 }
                 if (!db.objectStoreNames.contains("meta")) {
                     db.createObjectStore("meta", { keyPath: "lang" });
+                }
+                if (!db.objectStoreNames.contains("cache")) {
+                    db.createObjectStore("cache", { keyPath: ["lang", "word"] });
                 }
             };
             request.onsuccess = function () { resolve(request.result); };
@@ -73,6 +76,24 @@
         });
     }
 
+    function getCached (lang, word) {
+        return withStore("cache", "readonly", function (store) {
+            return store.get([lang, word]);
+        });
+    }
+
+    function putCached (entry) {
+        return withStore("cache", "readwrite", function (store) {
+            store.put(entry);
+        });
+    }
+
+    function countStore (storeName) {
+        return withStore(storeName, "readonly", function (store) {
+            return store.count();
+        });
+    }
+
     function bulkPut (storeName, records) {
         return withStore(storeName, "readwrite", function (store) {
             records.forEach(function (record) { store.put(record); });
@@ -91,6 +112,9 @@
         putMeta: putMeta,
         getDefinition: getDefinition,
         getLemma: getLemma,
+        getCached: getCached,
+        putCached: putCached,
+        countStore: countStore,
         bulkPut: bulkPut,
         clearStore: clearStore
     };

@@ -120,6 +120,9 @@ if (typeof browser !== "undefined" && browser.runtime && browser.runtime.onInsta
         if (request.type === "remove-offline-data") {
             return removeOfflineData().then(() => ({ removed: true }));
         }
+        if (request.type === "clear-web-cache") {
+            return lugaticDb.clearStore("cache").then(() => ({ cleared: true }));
+        }
     });
 
     // Self-heal on every worker start (missed onInstalled, interrupted import).
