@@ -93,7 +93,9 @@ morphological glosses first ("container: one that contains"). Before rendering, 
 module in `src/shared/` scores senses per part of speech: **demote** short senses that
 contain the headword's stem or match circular-gloss patterns ("one who …", "that which …",
 "plural of …"); **promote** senses that carry an example. The bubble renders the top 2–3
-ranked senses per POS.
+ranked senses per POS. **Gloss chaining (v1.0).** When the top-ranked sense for a POS is
+still circular (the kept-lone-gloss case), the bubble appends the stem word's leading
+definition beneath it: `→ contain: hold within`.
 
 `DefinitionResult` (normalized internal format, language-aware from day one):
 
@@ -214,6 +216,8 @@ lugatic/
 - [ ] History (port from original) with clear button
 - [ ] Recursive in-bubble lookup: double-click a word inside the bubble to look it up
 - [ ] Wiktionary REST API fallback when dictionaryapi.dev is unreachable
+- [ ] Gloss chaining: when the top-ranked sense is circular, append the stem word's leading
+      definition beneath it (`→ stem: definition`)
 - [ ] Options page complete; icons + store screenshots
 - [ ] PRIVACY.md; manual test matrix pass (see §9)
 - [ ] Tag v1.0.0 → GitHub Release; submit to AMO (free) and Chrome Web Store ($5 one-time)
