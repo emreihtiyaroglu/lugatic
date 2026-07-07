@@ -18,10 +18,9 @@ library used, per project policy (see CLAUDE.md).
 
 ## Icons
 
-- The extension icons in `assets/icons/` are the original Dictionary Anywhere
-  icons (GPL-3.0), kept as **temporary development placeholders only**. They
-  must be replaced with Lugatic's own icons before any store release
-  (PLAN.md, v1.0 milestone).
+- The Lugatic icon (`assets/icons/lugatic.svg` and the PNGs derived from it)
+  is original work created for this project, licensed GPL-3.0 with the rest
+  of the repository.
 
 ## Data sources
 
