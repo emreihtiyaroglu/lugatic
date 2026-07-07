@@ -69,6 +69,17 @@ async function importDataset (manifest) {
     });
 }
 
+// Used by the lookup waterfall (background.js): local queries are only
+// attempted once the bundled dataset for that language is fully imported.
+function datasetReady (lang) {
+    return fetchBundled(DATASET_MANIFEST_URL, false)
+        .then((manifest) => {
+            if (manifest.lang !== lang) { return false; }
+            return lugaticDb.getMeta(lang).then((meta) => isImported(meta, manifest));
+        })
+        .catch(() => false);
+}
+
 let importInFlight = null;
 
 function runImport (force) {
@@ -116,5 +127,5 @@ if (typeof browser !== "undefined" && browser.runtime && browser.runtime.onInsta
 }
 
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { toBatches, isImported };
+    module.exports = { toBatches, isImported, datasetReady };
 }

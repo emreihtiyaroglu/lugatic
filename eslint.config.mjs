@@ -23,11 +23,23 @@ export default [
                 normalization: "readonly",
                 senseRanking: "readonly",
                 lugaticDb: "readonly",
+                lemmatize: "readonly",
+                datasetReady: "readonly",
                 DecompressionStream: "readonly"
             }
         },
         rules: {
             "no-unused-vars": ["error", { args: "none" }]
+        }
+    },
+    {
+        // dataset-import.js defines datasetReady (consumed as a global by
+        // background.js), so the shared global must not apply to it here.
+        files: ["src/background/dataset-import.js"],
+        languageOptions: {
+            globals: {
+                datasetReady: "off"
+            }
         }
     },
     {
