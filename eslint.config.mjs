@@ -21,7 +21,9 @@ export default [
                 ...globals.webextensions,
                 importScripts: "readonly",
                 normalization: "readonly",
-                senseRanking: "readonly"
+                senseRanking: "readonly",
+                lugaticDb: "readonly",
+                DecompressionStream: "readonly"
             }
         },
         rules: {
@@ -29,9 +31,9 @@ export default [
         }
     },
     {
-        // Shared modules run in workers, event pages, and Node tests; the
-        // UMD-style footer references `module`.
-        files: ["src/shared/*.js"],
+        // Files that also load in Node tests use a UMD-style footer
+        // referencing `module`.
+        files: ["src/shared/*.js", "src/background/dataset-import.js"],
         languageOptions: {
             globals: {
                 module: "writable",

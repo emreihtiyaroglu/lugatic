@@ -5,7 +5,9 @@ if (typeof importScripts === "function") {
     importScripts(
         "/src/shared/browser-polyfill.js",
         "/src/shared/normalization.js",
-        "/src/shared/sense-ranking.js"
+        "/src/shared/sense-ranking.js",
+        "/src/shared/db.js",
+        "/src/background/dataset-import.js"
     );
 }
 
@@ -16,6 +18,9 @@ const DICTIONARY_API_URL = 'https://api.dictionaryapi.dev/api/v2/entries',
     };
 
 browser.runtime.onMessage.addListener((request) => {
+    // Typed messages (e.g. reimport-dataset) belong to other listeners.
+    if (!request || typeof request.word !== "string") { return; }
+
     const { word, lang } = request;
 
     return lookup(word, lang).then((content) => {

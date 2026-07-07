@@ -44,6 +44,19 @@
           </div>
         </div>
         <div class="option-row">
+          <div class="option-name">Offline dictionary:</div>
+          <div class="option-value">
+            <div class="option-value-primary">
+              <span id="dataset-status">Checking&hellip;</span>
+            </div>
+            <div class="option-value-primary">
+              <button id="reimport-dataset-btn" class="btn btn-default">
+                Re-import dataset
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="option-row">
           <div class="option-name">Word history:</div>
           <div class="option-value">
             <div class="option-value-primary">
@@ -78,6 +91,7 @@
       </form>
     </div>
     <script type="text/javascript" src="../shared/browser-polyfill.js"></script>
+    <script type="text/javascript" src="../shared/db.js"></script>
     <script type="text/javascript" src="./options.js"></script>
   </body>
 </html>

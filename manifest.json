@@ -35,6 +35,8 @@
       "src/shared/browser-polyfill.js",
       "src/shared/normalization.js",
       "src/shared/sense-ranking.js",
+      "src/shared/db.js",
+      "src/background/dataset-import.js",
       "src/background/background.js"
     ]
   },
