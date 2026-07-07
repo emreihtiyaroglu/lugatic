@@ -64,9 +64,11 @@
     // meanings: dictionaryapi.dev shape [{ partOfSpeech, definitions: [...] }]
     // Returns [{ pos, senses: [{ definition, example }] }], best senses first,
     // trimmed to 3 per POS for single-POS words, else 2 (PLAN.md §4: "2–3").
-    function rankMeanings (meanings, headword) {
+    // maxPerPos overrides the trim (Infinity = full ranked entry, for the
+    // bubble's expanded view); dropped junk senses stay dropped either way.
+    function rankMeanings (meanings, headword, maxPerPos) {
         var stems = stemsOf(headword || ""),
-            perPos = meanings.length > 1 ? 2 : 3;
+            perPos = maxPerPos || (meanings.length > 1 ? 2 : 3);
 
         return meanings.map(function (meaning) {
             var scored = (meaning.definitions || []).map(function (sense, index) {

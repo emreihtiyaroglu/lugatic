@@ -90,13 +90,18 @@
 
         var content = document.createElement("div");
         content.className = "mwe-popups-extract";
-        content.style = "line-height: 1.4; margin-top: 0px; margin-bottom: 11px; max-height: none";
+        // Collapsed cap ≈ 280px bubble total (PLAN.md §4); the sense area
+        // gets the remainder after heading and footer.
+        content.style = "line-height: 1.4; margin-top: 0px; margin-bottom: 8px; max-height: 190px; overflow: hidden;";
         contentContainer.appendChild(content);
 
 
         var heading = document.createElement("h3");
         heading.style = "margin-block-end: 0px; display:inline-block;";
         heading.textContent = "Searching";
+
+        var phonetic = document.createElement("span");
+        phonetic.style = "display: none; color: #72777d; font-size: 13px; margin-left: 8px;";
 
         var meaning = document.createElement("p");
         meaning.style = "margin-top: 10px";
@@ -107,20 +112,34 @@
         audio.innerHTML = "&nbsp;";
         audio.style.display = "none";
 
-        var moreInfo =document.createElement("a");
-        moreInfo.href = `https://${LANGUAGE}.wiktionary.org/wiki/${encodeURIComponent(info.word.trim())}`;
-        moreInfo.style = "float: right; text-decoration: none;"
-        moreInfo.target = "_blank";
+        // Footer row (PLAN.md §4): source badge · More ▾ · settings gear.
+        var footer = document.createElement("div");
+        footer.style = "border-top: 1px solid #eaecf0; margin: 0 16px; padding: 8px 0 10px; display: flex; align-items: center;";
 
-        // Source badge (PLAN.md §4): offline dataset vs web API result.
         var sourceBadge = document.createElement("span");
-        sourceBadge.style = "display: none; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #72777d; border: 1px solid #c8ccd1; border-radius: 8px; padding: 1px 7px; vertical-align: middle;";
+        sourceBadge.style = "display: none; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #72777d; border: 1px solid #c8ccd1; border-radius: 8px; padding: 1px 7px;";
+
+        var moreToggle = document.createElement("span");
+        moreToggle.style = "display: none; cursor: pointer; color: #3366cc; font-size: 13px; margin-left: auto;";
+        moreToggle.textContent = "More ▾";
+
+        var settingsGear = document.createElement("span");
+        settingsGear.style = "cursor: pointer; font-size: 15px; color: #72777d; margin-left: 12px;";
+        settingsGear.textContent = "⚙";
+        settingsGear.title = "Lugatic settings";
+        settingsGear.addEventListener("click", function () {
+            browser.runtime.sendMessage({ type: "open-options" });
+        });
+
+        footer.appendChild(sourceBadge);
+        footer.appendChild(moreToggle);
+        footer.appendChild(settingsGear);
 
         content.appendChild(heading);
+        content.appendChild(phonetic);
         content.appendChild(audio);
         content.appendChild(meaning);
-        content.appendChild(sourceBadge);
-        content.appendChild(moreInfo);
+        contentContainer.appendChild(footer);
         document.body.appendChild(hostDiv);
 
         if(info.clientY < window.innerHeight/2){
@@ -140,10 +159,13 @@
 
         return {
             heading,
+            phonetic,
             meaning,
-            moreInfo,
             audio,
-            sourceBadge
+            sourceBadge,
+            moreToggle,
+            content,
+            expanded: false
         };
 
     }
@@ -155,26 +177,27 @@
     }
 
     function appendToDiv(createdDiv, content){
-        var hostDiv = createdDiv.heading.getRootNode().host;
-        var popupDiv = createdDiv.heading.getRootNode().querySelectorAll("div")[1];
+        adjustingHeight(createdDiv, function () {
+            createdDiv.heading.textContent = content.word;
+            renderSenses(createdDiv.meaning, content);
 
-        var heightBefore = popupDiv.clientHeight;
-        createdDiv.heading.textContent = content.word;
-        renderSenses(createdDiv.meaning, content);
-        createdDiv.moreInfo.textContent = "More »";
+            if (content.phonetic) {
+                createdDiv.phonetic.textContent = content.phonetic;
+                createdDiv.phonetic.style.display = "inline";
+            }
 
-        if (content.source) {
-            createdDiv.sourceBadge.textContent = content.source === "local" ? "offline" : "web";
-            createdDiv.sourceBadge.style.display = "inline-block";
-        }
+            if (content.source) {
+                createdDiv.sourceBadge.textContent = content.source === "local" ? "offline" : "web";
+                createdDiv.sourceBadge.style.display = "inline-block";
+            }
 
-        var heightAfter = popupDiv.clientHeight;
-        var difference = heightAfter - heightBefore;
-
-
-        if(popupDiv.classList.contains("flipped_y")){
-            hostDiv.style.top = parseInt(hostDiv.style.top) - difference + 1 + "px";
-        }
+            if (hasMoreSenses(content)) {
+                createdDiv.moreToggle.style.display = "inline";
+                createdDiv.moreToggle.addEventListener("click", function () {
+                    toggleExpanded(createdDiv, content);
+                });
+            }
+        });
 
         if(content.audioSrc){
           var sound = document.createElement("audio");
@@ -186,15 +209,61 @@
         }
     }
 
-    function renderSenses (container, content){
+    // Re-measure the popup around a DOM change so a bubble flipped above
+    // the selection keeps its bottom edge anchored.
+    function adjustingHeight (createdDiv, change) {
+        var hostDiv = createdDiv.heading.getRootNode().host;
+        var popupDiv = createdDiv.heading.getRootNode().querySelectorAll("div")[1];
+        var heightBefore = popupDiv.clientHeight;
+
+        change();
+
+        var difference = popupDiv.clientHeight - heightBefore;
+        if (popupDiv.classList.contains("flipped_y")) {
+            hostDiv.style.top = parseInt(hostDiv.style.top) - difference + 1 + "px";
+        }
+    }
+
+    function countSenses (groups) {
+        return (groups || []).reduce(function (n, group) {
+            return n + group.senses.length;
+        }, 0);
+    }
+
+    function hasMoreSenses (content) {
+        return countSenses(content.fullSenses) > countSenses(content.senses);
+    }
+
+    // "More ▾" expands toward ≈520px with internal scroll for the full
+    // ranked entry; "Less ▴" restores the collapsed top-senses view (§4).
+    function toggleExpanded (createdDiv, content) {
+        adjustingHeight(createdDiv, function () {
+            createdDiv.expanded = !createdDiv.expanded;
+
+            if (createdDiv.expanded) {
+                createdDiv.content.style.maxHeight = "430px";
+                createdDiv.content.style.overflowY = "auto";
+                createdDiv.moreToggle.textContent = "Less ▴";
+            } else {
+                createdDiv.content.style.maxHeight = "190px";
+                createdDiv.content.style.overflowY = "hidden";
+                createdDiv.moreToggle.textContent = "More ▾";
+            }
+
+            renderSenses(createdDiv.meaning, content, createdDiv.expanded);
+        });
+    }
+
+    function renderSenses (container, content, expanded){
+        var groups = expanded && content.fullSenses ? content.fullSenses : content.senses;
         container.textContent = "";
 
-        if (!content.senses || !content.senses.length) {
+        if (!groups || !groups.length) {
             container.textContent = content.meaning;
             return;
         }
 
-        content.senses.forEach(function(group){
+        groups.forEach(function(group){
             var posLabel = document.createElement("div");
             posLabel.style = "font-style: italic; color: #666; margin-top: 6px;";
             posLabel.textContent = group.pos;
@@ -237,6 +306,12 @@
     }));
 
     document.addEventListener('click', removeMeaning);
+
+    document.addEventListener('keydown', ((e) => {
+        if (e.key === 'Escape') {
+            removeMeaning({ target: document.body });
+        }
+    }));
 
     (function () {
         let storageItem = browser.storage.local.get();
