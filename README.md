@@ -1,5 +1,8 @@
 # Lugatic
 
+[![CI](https://github.com/emreihtiyaroglu/lugatic/actions/workflows/ci.yml/badge.svg)](https://github.com/emreihtiyaroglu/lugatic/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/emreihtiyaroglu/lugatic?include_prereleases)](https://github.com/emreihtiyaroglu/lugatic/releases)
+
 A lightweight, high-coverage dictionary browser extension for Chrome and Firefox.
 Select a word anywhere on the web and get an instant definition in a small in-page
 bubble — offline-first, with automatic online fallback and one-click AI context
