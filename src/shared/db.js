@@ -67,6 +67,12 @@
         });
     }
 
+    function getLemma (lang, form) {
+        return withStore("lemmas", "readonly", function (store) {
+            return store.get([lang, form]);
+        });
+    }
+
     function bulkPut (storeName, records) {
         return withStore(storeName, "readwrite", function (store) {
             records.forEach(function (record) { store.put(record); });
@@ -84,6 +90,7 @@
         getMeta: getMeta,
         putMeta: putMeta,
         getDefinition: getDefinition,
+        getLemma: getLemma,
         bulkPut: bulkPut,
         clearStore: clearStore
     };
