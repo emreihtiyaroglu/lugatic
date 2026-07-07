@@ -1,5 +1,6 @@
 const DEFAULT_LANGUAGE = 'en',
     DEFAULT_TRIGGER_KEY = 'none',
+    DEFAULT_TRIGGER_MODE = 'dblclick',
     IS_HISTORY_ENABLED_BY_DEFAULT = true,
 
     SAVE_STATUS = document.querySelector("#save-status"),
@@ -21,6 +22,7 @@ function saveOptions(e) {
     browser.storage.local.set({
         language: document.querySelector("#language-selector").value,
         interaction: {
+            mode: document.querySelector("#trigger-mode").value,
             dblClick: {
                 key: document.querySelector("#popup-dblclick-key").value
             }
@@ -46,7 +48,7 @@ function saveOptions(e) {
         document.querySelector("#language-selector").value = language || DEFAULT_LANGUAGE;
 
         // interaction
-        // document.querySelector("#popup-dblclick-checkbox").checked = interaction.dblClick.enabled;
+        document.querySelector("#trigger-mode").value = interaction.mode || DEFAULT_TRIGGER_MODE;
         document.querySelector("#popup-dblclick-key").value = (interaction.dblClick && interaction.dblClick.key) || DEFAULT_TRIGGER_KEY;
         
         // document.querySelector("#popup-select-checkbox").checked = interaction.select.enabled;
@@ -90,6 +92,7 @@ function saveOptions(e) {
     browser.storage.local.set({
         language: DEFAULT_LANGUAGE,
         interaction: {
+            mode: DEFAULT_TRIGGER_MODE,
             dblClick: {
                 key: DEFAULT_TRIGGER_KEY
             }
