@@ -71,6 +71,8 @@ test("web fallback: lookup normalizes the selection and maps the API response", 
     assert.match(content.meaning, /^A receptacle/);
     assert.strictEqual(content.source, "web");
     assert.strictEqual(content.audioSrc, "https://example.invalid/container.mp3");
+    assert.strictEqual(content.phonetic, "/kənˈteɪnə/");
+    assert.ok(Array.isArray(content.fullSenses), "full ranked entry shipped for the expanded view");
     assert.ok(!content.senses[0].senses.some((sense) => /one that contains/i.test(sense.definition)));
 });
 

@@ -54,6 +54,20 @@ test("multi-POS words trim to 2 senses per POS, single-POS to 3", () => {
     assert.strictEqual(single[0].senses.length, 3);
 });
 
+test("maxPerPos override returns the full ranked entry, junk still dropped", () => {
+    const meanings = [
+        { partOfSpeech: "noun", definitions: [1, 2, 3, 4].map((i) => longSense("noun sense " + i)) },
+        { partOfSpeech: "verb", definitions: [{ definition: "one who examples" }].concat([1, 2, 3].map((i) => longSense("verb sense " + i))) }
+    ];
+
+    const trimmed = rankMeanings(meanings, "example");
+    const full = rankMeanings(meanings, "example", Infinity);
+
+    assert.deepStrictEqual(trimmed.map((g) => g.senses.length), [2, 2]);
+    assert.deepStrictEqual(full.map((g) => g.senses.length), [4, 3]);
+    assert.ok(!full[1].senses.some((s) => s.definition === "one who examples"), "junk dropped even in full view");
+});
+
 test("equal scores keep source order (stable sort)", () => {
     const ranked = rankMeanings([{
         partOfSpeech: "noun",

@@ -84,7 +84,7 @@ async function localLookup (word, lang) {
         definitions: entry.senses
     }));
 
-    return buildContent(record.word, meanings, null, "local");
+    return buildContent(record.word, meanings, null, "local", record.phonetic || null);
 }
 
 // Irregulars from the imported OEWN exception table first ("geese" →
@@ -115,36 +115,46 @@ function extractContent (entries) {
     const entry = entries[0];
     if (!entry) { return null; }
 
-    const phonetics = (entry.phonetics || []).find((phonetic) => phonetic.audio);
+    const withAudio = (entry.phonetics || []).find((phonetic) => phonetic.audio);
+    const withText = (entry.phonetics || []).find((phonetic) => phonetic.text);
 
     return buildContent(
         entry.word,
         entry.meanings || [],
-        (phonetics && phonetics.audio) || null,
-        "web"
+        (withAudio && withAudio.audio) || null,
+        "web",
+        entry.phonetic || (withText && withText.text) || null
     );
 }
 
-function buildContent (word, meanings, audioSrc, source) {
-    const senses = senseRanking.rankMeanings(meanings, word)
-        .map((group) => ({
-            pos: group.pos,
-            senses: group.senses.map((sense) => ({
-                definition: capitalize(sense.definition),
-                example: sense.example
-            }))
-        }));
+function buildContent (word, meanings, audioSrc, source, phonetic) {
+    // Trimmed senses for the collapsed bubble, the full ranked entry for
+    // the expanded "More ▾" view (PLAN.md §4).
+    const senses = presentGroups(senseRanking.rankMeanings(meanings, word));
+    const fullSenses = presentGroups(senseRanking.rankMeanings(meanings, word, Infinity));
 
     if (!senses.length) { return null; }
 
     return {
         word: word,
+        phonetic: phonetic || null,
         // Single-string summary kept for history storage.
         meaning: senses[0].senses[0].definition,
         senses: senses,
+        fullSenses: fullSenses,
         audioSrc: audioSrc,
         source: source
     };
+}
+
+function presentGroups (groups) {
+    return groups.map((group) => ({
+        pos: group.pos,
+        senses: group.senses.map((sense) => ({
+            definition: capitalize(sense.definition),
+            example: sense.example
+        }))
+    }));
 }
 
 function capitalize (text) {

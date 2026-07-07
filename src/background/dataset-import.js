@@ -123,6 +123,10 @@ if (typeof browser !== "undefined" && browser.runtime && browser.runtime.onInsta
         if (request.type === "clear-web-cache") {
             return lugaticDb.clearStore("cache").then(() => ({ cleared: true }));
         }
+        if (request.type === "open-options") {
+            browser.runtime.openOptionsPage();
+            return Promise.resolve({ opened: true });
+        }
     });
 
     // Self-heal on every worker start (missed onInstalled, interrupted import).
