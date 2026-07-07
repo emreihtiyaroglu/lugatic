@@ -194,23 +194,27 @@ lugatic/
 
 ## 8. Milestones
 
+**Status (2026-07-07):** v0.1 and v0.5 complete; v0.5.0 released (PR #20).
+v1.0 is next, starting with context menu + side panel (PDF support).
+
 **v0.1 — "It works" (days)**
-- [ ] Fork/clone Dictionary Anywhere, strip Google scraping
-- [ ] MV3 migration + webextension-polyfill; loads in Chrome and Firefox
-- [ ] dictionaryapi.dev lookup wired to the existing bubble (web-only, no offline yet)
-- [ ] Word normalization (punctuation, lowercase)
-- [ ] Repo, README, LICENSE, ATTRIBUTION, CI lint
+- [x] Fork/clone Dictionary Anywhere, strip Google scraping
+- [x] MV3 migration + webextension-polyfill; loads in Chrome and Firefox
+- [x] dictionaryapi.dev lookup wired to the existing bubble (web-only, no offline yet)
+- [x] Word normalization (punctuation, lowercase)
+- [x] Repo, README, LICENSE, ATTRIBUTION, CI lint
 
 **v0.5 — "Hybrid" (the core)**
 - [x] Data pipeline in Docker: pinned downloads + WordNet parse (slice 1)
-- [ ] Pipeline slice 2: lemma exception table from OEWN morphology
-- [ ] Bundle dataset in extension; IndexedDB import on install/update with progress UI
-- [ ] Lookup waterfall + permanent caching + source badge
-- [ ] Runtime lemmatization (Morphy rules + exception table); phrase-then-first-word handling
-- [ ] Bubble redesign: collapsed/expanded "More ▾", footer row
-- [ ] Floating selection button trigger + trigger settings
+- [x] Pipeline slice 2: lemma exception table from OEWN morphology
+- [x] Bundle dataset in extension; IndexedDB import on install/update with progress UI
+- [x] Lookup waterfall + permanent caching + source badge
+- [x] Runtime lemmatization (Morphy rules + exception table)
+- [x] Bubble redesign: collapsed/expanded "More ▾", footer row
+- [x] Floating selection button trigger + trigger settings
 
 **v1.0 — "Ship it"**
+- [ ] Phrase-then-first-word selection handling (deferred from v0.5)
 - [ ] Context menu + side panel → PDF support
 - [ ] AI button + AI site dropdown
 - [ ] History (port from original) with clear button
