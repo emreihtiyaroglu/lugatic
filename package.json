@@ -21,6 +21,9 @@
     "ignoreFiles": [
       "node_modules/**",
       "web-ext-artifacts/**",
+      "data-pipeline",
+      "data-pipeline/**",
+      "tests",
       "tests/**",
       "package.json",
       "package-lock.json",
