@@ -75,6 +75,9 @@ function runImport (force) {
     importInFlight = importInFlight || fetchBundled(DATASET_MANIFEST_URL, false)
         .then(async (manifest) => {
             const meta = await lugaticDb.getMeta(manifest.lang);
+            // "Remove offline data" sets disabled; only an explicit
+            // re-import from the options page overrides it.
+            if (!force && meta && meta.disabled) { return; }
             if (!force && isImported(meta, manifest)) { return; }
             await importDataset(manifest);
         })
@@ -86,14 +89,26 @@ function runImport (force) {
     return importInFlight;
 }
 
+async function removeOfflineData () {
+    const manifest = await fetchBundled(DATASET_MANIFEST_URL, false);
+    await lugaticDb.clearStore("definitions");
+    await lugaticDb.clearStore("lemmas");
+    await lugaticDb.putMeta({ lang: manifest.lang, disabled: true, importedVersion: null, progress: null });
+}
+
 if (typeof browser !== "undefined" && browser.runtime && browser.runtime.onInstalled) {
     browser.runtime.onInstalled.addListener(() => { runImport(false); });
 
     browser.runtime.onMessage.addListener((request) => {
-        if (!request || request.type !== "reimport-dataset") { return; }
+        if (!request || !request.type) { return; }
 
-        runImport(true);
-        return Promise.resolve({ started: true });
+        if (request.type === "reimport-dataset") {
+            runImport(true);
+            return Promise.resolve({ started: true });
+        }
+        if (request.type === "remove-offline-data") {
+            return removeOfflineData().then(() => ({ removed: true }));
+        }
     });
 
     // Self-heal on every worker start (missed onInstalled, interrupted import).

@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>Lugatic - Extension Options</title>
     <link rel="stylesheet" type="text/css" href="./options.css">
   </head>
@@ -49,9 +50,15 @@
             <div class="option-value-primary">
               <span id="dataset-status">Checking&hellip;</span>
             </div>
+            <div class="option-value-secondary">
+              Storage used: <span id="dataset-storage">&hellip;</span>
+            </div>
             <div class="option-value-primary">
               <button id="reimport-dataset-btn" class="btn btn-default">
                 Re-import dataset
+              </button>
+              <button id="remove-dataset-btn" class="btn btn-default">
+                Remove offline data
               </button>
             </div>
           </div>

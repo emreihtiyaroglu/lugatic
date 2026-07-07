@@ -120,7 +120,9 @@ function saveOptions(e) {
   // --- Offline dictionary status (PLAN.md §6) ---
 
   const DATASET_STATUS = document.querySelector("#dataset-status"),
-      REIMPORT_DATASET_BUTTON = document.querySelector("#reimport-dataset-btn");
+      DATASET_STORAGE = document.querySelector("#dataset-storage"),
+      REIMPORT_DATASET_BUTTON = document.querySelector("#reimport-dataset-btn"),
+      REMOVE_DATASET_BUTTON = document.querySelector("#remove-dataset-btn");
 
   let datasetManifest = null,
       datasetRefreshTimer = null;
@@ -137,8 +139,14 @@ function saveOptions(e) {
             .then((response) => response.json())
             .then((manifest) => (datasetManifest = manifest));
 
+    refreshStorageEstimate();
+
     manifestReady
         .then((manifest) => lugaticDb.getMeta(manifest.lang).then((meta) => {
+            if (meta && meta.disabled) {
+                DATASET_STATUS.textContent = "Offline data removed — lookups use the web";
+                return;
+            }
             if (meta && meta.importedVersion === manifest.version) {
                 DATASET_STATUS.textContent =
                     "Ready — v" + manifest.version + " · " + meta.words + " words";
@@ -155,6 +163,18 @@ function saveOptions(e) {
         });
   }
 
+  function refreshStorageEstimate () {
+    if (!navigator.storage || !navigator.storage.estimate) {
+        DATASET_STORAGE.textContent = "not reported by this browser";
+        return;
+    }
+
+    navigator.storage.estimate().then((estimate) => {
+        DATASET_STORAGE.textContent =
+            (estimate.usage / 1024 / 1024).toFixed(1) + " MB (browser estimate)";
+    });
+  }
+
   function reimportDataset (e) {
     browser.runtime.sendMessage({ type: "reimport-dataset" });
     DATASET_STATUS.textContent = "Importing…";
@@ -163,7 +183,16 @@ function saveOptions(e) {
     e.preventDefault();
   }
 
+  function removeOfflineData (e) {
+    browser.runtime.sendMessage({ type: "remove-offline-data" })
+        .then(() => refreshDatasetStatus());
+    DATASET_STATUS.textContent = "Removing…";
+
+    e.preventDefault();
+  }
+
   REIMPORT_DATASET_BUTTON.addEventListener("click", reimportDataset);
+  REMOVE_DATASET_BUTTON.addEventListener("click", removeOfflineData);
   document.addEventListener("DOMContentLoaded", refreshDatasetStatus);
 
   document.addEventListener('DOMContentLoaded', restoreOptions);

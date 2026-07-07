@@ -16,6 +16,13 @@ Google-results scraping. See [ATTRIBUTION.md](ATTRIBUTION.md) for all credits.
 lookup backend is being replaced. See [PLAN.md](PLAN.md) for the full
 architecture, roadmap, and milestones.
 
+## Known limitations
+
+- Lookups cannot work on browser-internal and extension pages
+  (`chrome://…`, `about:…`, `edge://…`, other extensions' pages, and the
+  browsers' add-on stores): browsers do not inject content scripts into
+  privileged pages. The full list of limitations lives in PLAN.md §10.
+
 ## License
 
 [GPL-3.0](LICENSE), as inherited from the Dictionary Anywhere fork.
