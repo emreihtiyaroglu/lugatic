@@ -115,8 +115,14 @@ definition beneath it: `→ contain: hold within`.
 
 | Surface           | Double-click | Floating button | Context menu | Result shown in |
 |-------------------|:---:|:---:|:---:|-----------------|
-| Regular webpages  | ✅ | ✅ | ✅ | in-page bubble  |
+| Regular webpages  | ✅ | ✅ | ✅ | in-page bubble (context menu: side panel) |
 | Native PDF viewer | ❌ (impossible) | ❌ (impossible) | ✅ | side panel      |
+
+Context-menu results render in the side panel on **every** surface, not just PDFs:
+Chrome's `sidePanel.open()` and Firefox's `sidebarAction.open()` must be called
+synchronously inside the user-gesture handler, so the background cannot first probe
+(asynchronously) whether the tab has a content script that could show the bubble.
+On regular pages the bubble remains available via double-click / floating button.
 
 Trigger mode is a setting: double-click / floating button / both / require modifier key (Ctrl/Alt).
 
@@ -215,7 +221,7 @@ v1.0 is next, starting with context menu + side panel (PDF support).
 
 **v1.0 — "Ship it"**
 - [ ] Phrase-then-first-word selection handling (deferred from v0.5)
-- [ ] Context menu + side panel → PDF support
+- [x] Context menu + side panel → PDF support
 - [ ] AI button + AI site dropdown
 - [ ] History (port from original) with clear button
 - [ ] Recursive in-bubble lookup: double-click a word inside the bubble to look it up

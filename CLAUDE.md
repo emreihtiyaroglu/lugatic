@@ -64,9 +64,11 @@ This project is **Lugatic**, an MV3 cross-browser (Chrome + Firefox) dictionary 
   transiently show far more before LevelDB compaction — 667 MB observed, harmless);
   "selfie" is absent from WordNet 2025 but present in dictionaryapi.dev — forces the
   web/cache path.
-- `web-ext lint` baseline is exactly 1 warning (Firefox ignoring background.service_worker;
-  intended). Any new warning is a regression; addons-linter flags every innerHTML
-  assignment, even of static strings — build DOM nodes instead.
+- `web-ext lint` baseline is exactly 3 warnings, all intended Chrome-only surface Firefox
+  ignores: background.service_worker, the `sidePanel` permission, and `sidePanel.open`
+  (feature-detected; Firefox takes the `sidebarAction.open` branch). Any new warning is a
+  regression; addons-linter flags every innerHTML assignment, even of static strings —
+  build DOM nodes instead.
 - `npm test` output is ANSI-colored; grep for plain substrings, not line anchors.
 - package.json stays at version 0.1.0 deliberately; manifest.json is the version of record.
 - The icons' master SVG is `assets/icons/lugatic.svg`; PNGs are exported from it via

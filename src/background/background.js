@@ -25,15 +25,77 @@ browser.runtime.onMessage.addListener((request) => {
     const { word, lang } = request;
 
     return lookup(word, lang).then((content) => {
-        content && browser.storage.local.get().then((results) => {
-            let history = results.history || DEFAULT_HISTORY_SETTING;
-
-            history.enabled && saveWord(content)
-        });
+        content && saveToHistory(content);
 
         return { content };
     });
 });
+
+// Context menu → side panel (PLAN.md §4): the only trigger that works in
+// native PDF viewers, where content scripts cannot be injected. Results for
+// every surface render in the side panel — sidePanel.open (Chrome) and
+// sidebarAction.open (Firefox) must be called synchronously inside the
+// user-gesture handler, so the click cannot first probe asynchronously
+// whether an in-page bubble is available.
+const CONTEXT_MENU_ID = "lugatic-lookup";
+const PANEL_STATE_KEY = "sidePanelLookup";
+
+if (typeof browser !== "undefined" && browser.contextMenus) {
+    browser.runtime.onInstalled.addListener(() => {
+        browser.contextMenus.create({
+            id: CONTEXT_MENU_ID,
+            title: 'Look up "%s" in Lugatic',
+            contexts: ["selection"]
+        });
+    });
+
+    browser.contextMenus.onClicked.addListener((info, tab) => {
+        if (info.menuItemId !== CONTEXT_MENU_ID) { return; }
+
+        openLookupPanel(tab);
+        runPanelLookup(info.selectionText);
+    });
+}
+
+function openLookupPanel (tab) {
+    if (browser.sidePanel) {
+        browser.sidePanel.open(
+            tab && typeof tab.windowId === "number"
+                ? { windowId: tab.windowId }
+                : { tabId: tab.id }
+        ).catch(() => {});
+    } else if (browser.sidebarAction && browser.sidebarAction.open) {
+        browser.sidebarAction.open().catch(() => {});
+    }
+}
+
+// The panel state lives in storage.session, never in worker globals: the
+// panel document may not exist yet when the lookup finishes (it reads the
+// state on load and follows storage.onChanged afterwards), and the worker
+// may sleep between the click and the render.
+async function runPanelLookup (selection) {
+    const settings = await browser.storage.local.get("language");
+    const lang = settings.language || "en";
+    const word = normalization.normalizeWord(selection);
+
+    await setPanelState({ status: "loading", word, lang, at: Date.now() });
+
+    const content = await lookup(selection, lang);
+
+    content && saveToHistory(content);
+
+    await setPanelState({
+        status: content ? "found" : "not-found",
+        word,
+        lang,
+        content: content || null,
+        at: Date.now()
+    });
+}
+
+function setPanelState (state) {
+    return browser.storage.session.set({ [PANEL_STATE_KEY]: state }).catch(() => {});
+}
 
 function lookup (word, lang) {
     const query = normalization.normalizeWord(word);
@@ -159,6 +221,14 @@ function presentGroups (groups) {
 
 function capitalize (text) {
     return text ? text[0].toUpperCase() + text.substring(1) : text;
+}
+
+function saveToHistory (content) {
+    browser.storage.local.get().then((results) => {
+        const history = results.history || DEFAULT_HISTORY_SETTING;
+
+        history.enabled && saveWord(content);
+    });
 }
 
 function saveWord (content) {
