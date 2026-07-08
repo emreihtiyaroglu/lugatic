@@ -1,0 +1,102 @@
+/* Side panel result view (PLAN.md §4): same Dictionary Anywhere look as the
+   in-page bubble — arial, #222 text, #72777d muted, source badge pill. */
+
+body {
+    margin: 0;
+    font-family: arial, sans-serif;
+    font-size: 14px;
+    color: #222;
+    background: #fff;
+}
+
+#panel {
+    padding: 16px;
+    line-height: 1.4;
+}
+
+.word-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+h1 {
+    font-size: 18px;
+    margin: 0;
+    display: inline-block;
+}
+
+.phonetic {
+    color: #72777d;
+    font-size: 13px;
+    margin-left: 8px;
+}
+
+/* Same speaker glyph the bubble uses, as a data URI so no external request. */
+.audio {
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcUlEQVQ4y2P4//8/AyUYQhAH3gNxA7IAIQPmo/H3g/QA8XkgFiBkwHyoYnRQABVfj88AmGZcTuuHyjlgMwBZM7IE3NlQGhQe65EN+I8Dw8MLGgYoFpFqADK/YUAMwOsFigORatFIlYRElaRMWmaiBAMAp0n+3U0kqkAAAAAASUVORK5CYII=);
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    margin-left: 8px;
+    opacity: 0.5;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    align-self: center;
+    border: none;
+    background-color: transparent;
+    padding: 0;
+}
+
+.audio:hover {
+    opacity: 1;
+}
+
+.pos {
+    font-style: italic;
+    color: #666;
+    margin-top: 10px;
+}
+
+.sense {
+    margin: 2px 0 0 8px;
+}
+
+.example {
+    color: #72777d;
+    margin: 1px 0 0 16px;
+    font-style: italic;
+}
+
+.footer {
+    border-top: 1px solid #eaecf0;
+    margin-top: 16px;
+    padding-top: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.source-badge {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #72777d;
+    border: 1px solid #c8ccd1;
+    border-radius: 8px;
+    padding: 1px 7px;
+}
+
+.settings-gear {
+    cursor: pointer;
+    font-size: 15px;
+    color: #72777d;
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.muted {
+    color: #72777d;
+}

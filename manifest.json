@@ -19,6 +19,20 @@
     "page": "src/options/options.html"
   },
 
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+
+  "sidebar_action": {
+    "default_title": "Lugatic",
+    "default_panel": "src/sidepanel/sidepanel.html",
+    "default_icon": {
+      "16": "assets/icons/lugatic-16.png",
+      "32": "assets/icons/lugatic-32.png"
+    },
+    "open_at_install": false
+  },
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -43,7 +57,9 @@
   },
 
   "permissions": [
-    "storage"
+    "storage",
+    "contextMenus",
+    "sidePanel"
   ],
 
   "minimum_chrome_version": "121",

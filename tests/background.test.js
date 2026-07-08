@@ -3,8 +3,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 
-let listener;
+let listener, installedListener, menuClickListener;
 const fetched = [];
+const menusCreated = [];
+const panelOpens = [];
+const panelStates = []; // every value written to storage.session
+const localSets = []; // every value written to storage.local
 const state = {
     datasetReady: false,
     definitions: {}, // word → stored record
@@ -12,14 +16,35 @@ const state = {
 };
 
 global.browser = {
-    runtime: { onMessage: { addListener: (fn) => { listener = fn; } } },
+    runtime: {
+        onMessage: { addListener: (fn) => { listener = fn; } },
+        onInstalled: { addListener: (fn) => { installedListener = fn; } }
+    },
+    contextMenus: {
+        create: (properties) => { menusCreated.push(properties); },
+        onClicked: { addListener: (fn) => { menuClickListener = fn; } }
+    },
+    sidePanel: {
+        open: (options) => { panelOpens.push(options); return Promise.resolve(); }
+    },
     storage: {
         local: {
             get: () => Promise.resolve({}),
-            set: () => Promise.resolve()
+            set: (items) => { localSets.push(items); return Promise.resolve(); }
+        },
+        session: {
+            set: (items) => { panelStates.push(items.sidePanelLookup); return Promise.resolve(); }
         }
     }
 };
+
+// Flushes the promise chains behind a fire-and-forget handler (context-menu
+// clicks return nothing to await).
+async function settled () {
+    for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+    }
+}
 global.normalization = require("../src/shared/normalization.js");
 global.senseRanking = require("../src/shared/sense-ranking.js");
 global.lemmatize = require("../src/shared/lemmatize.js");
@@ -174,4 +199,112 @@ test("local hits win over the cache", async () => {
 
 test("typed messages are ignored by the lookup listener", async () => {
     assert.strictEqual(listener({ type: "reimport-dataset" }), undefined);
+});
+
+test("install registers the selection context menu", () => {
+    installedListener();
+
+    assert.strictEqual(menusCreated.length, 1);
+    assert.strictEqual(menusCreated[0].id, "lugatic-lookup");
+    assert.deepStrictEqual(menusCreated[0].contexts, ["selection"]);
+    assert.match(menusCreated[0].title, /%s/);
+});
+
+test("context menu click opens the side panel synchronously (user gesture)", async () => {
+    state.datasetReady = false;
+    state.cache = {};
+
+    menuClickListener(
+        { menuItemId: "lugatic-lookup", selectionText: "Container" },
+        { id: 3, windowId: 7 }
+    );
+
+    // Before any promise resolves: Chrome rejects sidePanel.open once the
+    // gesture context is lost to an await.
+    assert.deepStrictEqual(panelOpens.at(-1), { windowId: 7 });
+
+    await settled();
+});
+
+test("context menu lookup publishes loading then found to the panel state", async () => {
+    state.datasetReady = false;
+    state.cache = {};
+    panelStates.length = 0;
+
+    menuClickListener(
+        { menuItemId: "lugatic-lookup", selectionText: "“Container,”" },
+        { id: 3, windowId: 7 }
+    );
+    await settled();
+
+    assert.strictEqual(panelStates.length, 2);
+    assert.strictEqual(panelStates[0].status, "loading");
+    assert.strictEqual(panelStates[0].word, "container");
+    assert.strictEqual(panelStates[1].status, "found");
+    assert.strictEqual(panelStates[1].content.word, "container");
+    assert.strictEqual(panelStates[1].content.source, "web");
+});
+
+test("context menu lookup saves to history like the bubble path", async () => {
+    state.datasetReady = false;
+    state.cache = {};
+    localSets.length = 0;
+
+    menuClickListener(
+        { menuItemId: "lugatic-lookup", selectionText: "container" },
+        { id: 3, windowId: 7 }
+    );
+    await settled();
+
+    const historyWrite = localSets.find((items) => items.definitions);
+    assert.ok(historyWrite, "history write happened");
+    assert.ok(historyWrite.definitions.container, "keyed by the looked-up word");
+});
+
+test("context menu lookup misses publish not-found with no content", async () => {
+    state.datasetReady = false;
+    state.cache = {};
+    panelStates.length = 0;
+    const okFetch = global.fetch;
+    global.fetch = (url) => { fetched.push(url); return Promise.resolve({ ok: false }); };
+
+    menuClickListener(
+        { menuItemId: "lugatic-lookup", selectionText: "xqzwv" },
+        { id: 3, windowId: 7 }
+    );
+    await settled();
+    global.fetch = okFetch;
+
+    assert.strictEqual(panelStates.at(-1).status, "not-found");
+    assert.strictEqual(panelStates.at(-1).content, null);
+    assert.strictEqual(panelStates.at(-1).word, "xqzwv");
+});
+
+test("clicks from other menu items are ignored", async () => {
+    const opensBefore = panelOpens.length;
+    const statesBefore = panelStates.length;
+
+    menuClickListener({ menuItemId: "someone-elses-menu", selectionText: "word" }, { id: 3, windowId: 7 });
+    await settled();
+
+    assert.strictEqual(panelOpens.length, opensBefore);
+    assert.strictEqual(panelStates.length, statesBefore);
+});
+
+test("falls back to sidebarAction.open when sidePanel is unavailable (Firefox)", async () => {
+    const sidePanel = global.browser.sidePanel;
+    let sidebarOpened = 0;
+    global.browser.sidePanel = undefined;
+    global.browser.sidebarAction = { open: () => { sidebarOpened++; return Promise.resolve(); } };
+
+    menuClickListener(
+        { menuItemId: "lugatic-lookup", selectionText: "container" },
+        { id: 3, windowId: 7 }
+    );
+
+    assert.strictEqual(sidebarOpened, 1);
+
+    await settled();
+    global.browser.sidePanel = sidePanel;
+    delete global.browser.sidebarAction;
 });
